@@ -20,11 +20,7 @@ int characterPlaneY;
 int characterBulletX;
 int characterBulletY;
 int maxBulletDistance;
-
 bool bulletFired;
-
-int cursor_x;
-int cursor_y;
 
 void reset()
 {
@@ -84,19 +80,10 @@ void updateGamePlay()
 { 
   updateCharacterPlane();
   updateCharacterBullet();
-  PlaneTracker();
-  updatePlaneCollision();
-  
-  //Bullet Fired
-  if(bulletFired)
-  {
-    arduboy.setCursor(0,0);
-    arduboy.print(F("True"));
-  }
-  if(!bulletFired) {
-    arduboy.setCursor(0,0);
-    arduboy.print(F("False"));
-  }
+  updateGameBorder();
+  arduboy.setCursor(0,0);
+  arduboy.setCursor(0,0);
+  arduboy.print(bulletFired ? F("True") : F("False"));
 }
 
 void drawGamePlay()
@@ -123,18 +110,7 @@ void updateCharacterPlane()
   if(arduboy.pressed(RIGHT_BUTTON)) ++characterPlaneX;
   if(arduboy.pressed(UP_BUTTON)) --characterPlaneY;
   if(arduboy.pressed(DOWN_BUTTON)) ++characterPlaneY;
-  maxBulletDistance = characterPlaneY - 55;
-}
-
-void PlaneTracker()
-{
-  arduboy.setCursor(74,0);
-  arduboy.print(F("x:"));
-  arduboy.print(characterPlaneX);
-
-  arduboy.setCursor(105,0);
-  arduboy.print(F("y:"));
-  arduboy.print(characterPlaneY);
+  maxBulletDistance = characterPlaneY - 66;
 }
 
 void drawCharacterPlane()
@@ -145,23 +121,29 @@ void drawCharacterPlane()
 //Character Bullet
 void updateCharacterBullet()
 { 
-  if(arduboy.pressed(A_BUTTON) && !bulletFired) {
-    bulletFired = true;
-    --characterBulletY;
-    characterBulletFired();
-  } else {
-    bulletFired = false;
-  }
-  if(arduboy.pressed(A_BUTTON) && bulletFired)
-    drawPlaneBulletFlash();
-    if(characterBulletY > maxBulletDistance)
+  if(arduboy.pressed(A_BUTTON))
+  {
+    if(bulletFired)
     {
-      characterBulletY -= 5;
-      bulletFired = true;
+      drawPlaneBulletFlash();
     }
-  if(characterBulletY < maxBulletDistance){
-    bulletFired = false;
+    else
+    {
+      fireBullet();
+    }
   }
+
+  if(characterBulletY > maxBulletDistance)
+    characterBulletY -= 6;
+  else
+    bulletFired = false;
+}
+
+void fireBullet()
+{
+  characterBulletX = characterPlaneX + 9;
+  characterBulletY = characterPlaneY - 2;
+  bulletFired = true;
 }
 
 void characterBulletFired()
@@ -180,7 +162,7 @@ void drawPlaneBulletFlash()
   Sprites::drawOverwrite(characterPlaneX + 7, characterPlaneY - 8, characterPlaneFlash, 0);
 }
 
-void updatePlaneCollision()
+void updateGameBorder()
 {
   if(characterPlaneX > 109) --characterPlaneX;
   if(characterPlaneX < 0) ++characterPlaneX;
