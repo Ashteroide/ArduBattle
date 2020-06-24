@@ -1,10 +1,14 @@
 #include <Arduboy2.h>
+#include <ArduboyTones.h>
+
 Arduboy2 arduboy;
+ArduboyTones sound(arduboy.audio.enabled);
 
 #include "characterPlane.h"
 #include "TitleScreen.h"
 #include "characterBullet.h"
 #include "characterPlaneFlash.h"
+#include "enemyPlane.h"
 
 enum class GameState
 {
@@ -22,17 +26,28 @@ int characterBulletY;
 int maxBulletDistance;
 bool bulletFired;
 
+int enemyPlaneX;
+int enemyPlaneY;
+bool enemyFlying;
+
 void reset()
 {
+  
   characterPlaneX = 55;
   characterPlaneY =  35;
   characterBulletX = characterPlaneX + 10;
   characterBulletY = characterPlaneY - 15;
   bulletFired = false;
+
+  enemyPlaneX = 30;
+  enemyPlaneY = 2;
+  enemyFlying = true;
 }
 
 void setup() {
   arduboy.begin();
+  Arduboy2Audio::on();
+  arduboy.audio.on();
   reset();
 
 }
@@ -80,8 +95,7 @@ void updateGamePlay()
 { 
   updateCharacterPlane();
   updateCharacterBullet();
-  updateGameBorder();
-  arduboy.setCursor(0,0);
+  updateEnemyPlane();
   arduboy.setCursor(0,0);
   arduboy.print(bulletFired ? F("True") : F("False"));
 }
@@ -106,37 +120,35 @@ void drawGameOver()
 //Character
 void updateCharacterPlane()
 { 
-  if(arduboy.pressed(LEFT_BUTTON)) --characterPlaneX;
-  if(arduboy.pressed(RIGHT_BUTTON)) ++characterPlaneX;
-  if(arduboy.pressed(UP_BUTTON)) --characterPlaneY;
-  if(arduboy.pressed(DOWN_BUTTON)) ++characterPlaneY;
-  maxBulletDistance = characterPlaneY - 66;
+  if(arduboy.pressed(LEFT_BUTTON) && (characterPlaneX > 0))
+    --characterPlaneX;
+  if(arduboy.pressed(RIGHT_BUTTON) && (characterPlaneX < 108))
+    ++characterPlaneX;
+  if(arduboy.pressed(UP_BUTTON) && (characterPlaneY > 0))
+    --characterPlaneY;
+  if(arduboy.pressed(DOWN_BUTTON) && (characterPlaneY < 51))
+    ++characterPlaneY;
+    
+  maxBulletDistance = characterPlaneY - Arduboy2::height();
 }
 
 void drawCharacterPlane()
 {
-  Sprites::drawOverwrite(characterPlaneX, characterPlaneY, characterPlane, 0);
+  Sprites::drawSelfMasked(characterPlaneX, characterPlaneY, characterPlane, 0);
 }
 
 //Character Bullet
 void updateCharacterBullet()
 { 
+  sound.tone(500, 500);
   if(arduboy.pressed(A_BUTTON))
   {
-    if(bulletFired)
-    {
-      drawPlaneBulletFlash();
-    }
-    else
-    {
-      fireBullet();
-    }
+    if(bulletFired) drawPlaneBulletFlash();
+    else fireBullet();
   }
 
-  if(characterBulletY > maxBulletDistance)
-    characterBulletY -= 6;
-  else
-    bulletFired = false;
+  if(characterBulletY > maxBulletDistance) characterBulletY -= 4;
+  else bulletFired = false;
 }
 
 void fireBullet()
@@ -162,10 +174,30 @@ void drawPlaneBulletFlash()
   Sprites::drawOverwrite(characterPlaneX + 7, characterPlaneY - 8, characterPlaneFlash, 0);
 }
 
-void updateGameBorder()
+
+
+//Enemy Plane
+void updateEnemyPlane()
 {
-  if(characterPlaneX > 109) --characterPlaneX;
-  if(characterPlaneX < 0) ++characterPlaneX;
-  if(characterPlaneY > 51) --characterPlaneY;
-  if(characterPlaneY < 0) ++characterPlaneY;
+  ++enemyPlaneY;
+  if(enemyPlaneY > 80)
+  {
+    enemyPlaneY = -20;
+  }
+  updateEnemyPlaneDead();
+  drawEnemyPlane();
+}
+
+void updateEnemyPlaneDead()
+{
+  if(enemyPlaneY == characterBulletY)
+  {
+    enemyPlaneY = -20;
+  }
+  else return;
+}
+
+void drawEnemyPlane()
+{
+  Sprites::drawSelfMasked(enemyPlaneX, enemyPlaneY, enemyPlane, 0);
 }
